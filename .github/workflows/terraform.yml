@@ -7,11 +7,14 @@ on:
       - stage
     paths:
       - 'terraform/**'
+      - '.github/workflows/**'
   pull_request:
     branches:
       - main
+      - stage
     paths:
       - 'terraform/**'
+      - '.github/workflows/**'
 
 # Configure these values as GitHub Actions repository secrets.
 env:
