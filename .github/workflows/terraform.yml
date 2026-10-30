@@ -67,7 +67,7 @@ jobs:
       # Terraform Apply
       - name: Terraform Apply
         id: apply
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main'||github.ref=='refs/heads/stage')
         run: terraform apply -auto-approve -input=false -parallelism=1 planfile
 
       # Get Kube Config File
