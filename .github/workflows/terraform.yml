@@ -1,4 +1,4 @@
-name: "Vprofile IAC"
+name: 'Vprofile IAC'
 
 on:
   push:
@@ -6,12 +6,12 @@ on:
       - main
       - stage
     paths:
-      - "terraform/**"
+      - 'terraform/**'
   pull_request:
     branches:
       - main
     paths:
-      - "terraform/**"
+      - 'terraform/**'
 
 # Configure these values as GitHub Actions repository secrets.
 env:
@@ -23,7 +23,7 @@ env:
 
 jobs:
   terraform:
-    name: "Apply terraform code changes"
+    name: 'Apply terraform code changes'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -53,32 +53,31 @@ jobs:
 
       - name: Terraform plan
         id: plan
-        run: terraform plan -no-color -input=false -out=planfile
+        run:
+          terraform plan -no-color -input=false -out=planfile
 
-      # Apply only for pushes to main or stage; pull requests only run validation and plan.
-      - name: Terraform apply
-        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/stage')
-        run: terraform apply -auto-approve -input=false planfile
-         continue-on-error: true
-
+          # Terraform Plan Status
       - name: Terraform Plan Status
         if: steps.plan.outcome == 'failure'
         run: exit 1
 
+      # Terraform Apply
       - name: Terraform Apply
-        id: apple
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        id: apply
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: terraform apply -auto-approve -input=false -parallelism=1 planfile
 
+      # Get Kube Config File
       - name: Get Kube Config File
         id: getconfig
-        if: steps.apple.outcome == 'success'
+        if: steps.apply.outcome == 'success'
         run: |
           aws eks update-kubeconfig \
             --region ${{ env.AWS_REGION }} \
-            --name ${{ env.EKS_CLUSTER_NAME }}
+            --name ${{ env.EKS_CLUSTER }}
 
+      # Install Ingress Controller
       - name: Install Ingress Controller
-        if: steps.apple.outcome == 'success' && steps.getconfig.outcome == 'success'
+        if: steps.apply.outcome == 'success' && steps.getconfig.outcome == 'success'
         run: |
-          kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.11.3/deploy/static/provider/cloud/deploy.yaml
+          kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.11.3/deploy/static/provider/aws/deploy.yaml
